@@ -2,55 +2,136 @@ import random
 from typing import List
 
 
+def add_string_to_chain(generated_chain: str, picked_transition: str) -> str:
+    new_str_to_the_chain = picked_transition.split('-> ')[1]
+    for i in range(len(generated_chain)):
+        if i != len(generated_chain) - 1:
+            if picked_transition.split('-> ')[1].endswith('epsilon'):
+                new_str_to_the_chain = picked_transition.split('-> ')[1][:-7]
+        if picked_transition.split('-> ')[0] == generated_chain[i]:
+            new_chain = generated_chain[:i] + new_str_to_the_chain \
+                        + generated_chain[i + 1:]
+            generated_chain = new_chain
+            return generated_chain
+
+
+def get_non_terminals_in_chain(generated_chain: str, _variables: str) -> List[str]:
+    non_terminals_in_the_chain = [non_terminal for non_terminal in generated_chain if
+                                  non_terminal in _variables]
+    return non_terminals_in_the_chain
+
+
 def fast_mode(_terminals: str, _variables: str, _initial: str, _productions: List[str]):
     started = False
+    stop = False
     process_to_generate_the_chain = []
     generated_chain = []
-    stop = False
     processes_used = []
+    remove_transition = False
+    removed_transitions_this_time = []
+    generated_chains = []
+    chain_in_iterations = []
+    iteration = 0
+    picked_start = ''
+    possible_starts = [start for start in _productions if start[0] == _initial]
     while not stop:
+
         if not started:
-            possible_starts = [start for start in _productions if start[0] == _initial]
             picked_start = random.choice(possible_starts)
             process_to_generate_the_chain = [picked_start]
             generated_chain = picked_start.split('-> ')[1]
+            if generated_chain.endswith('epsilon'):
+                generated_chain = generated_chain[:-7]
+            chain_in_iterations = [generated_chain]
+            non_terminals_in_the_chain = get_non_terminals_in_chain(generated_chain, _variables)
+            if len(non_terminals_in_the_chain) == 0:
+                possible_starts.remove(picked_start)
             started = True
-        non_terminals_in_the_chain = [non_terminal for non_terminal in generated_chain if non_terminal in _variables]
+
+        if remove_transition:
+            if len(process_to_generate_the_chain) == 1:
+                if len(possible_starts) == 0:
+                    print('No more possible transitions to take to generate another chain!')
+                    break
+                possible_starts.remove(picked_start)
+                if len(possible_starts) == 0:
+                    print('No more possible transitions to take to generate another chain!')
+                    break
+                picked_start = random.choice(possible_starts)
+                process_to_generate_the_chain = [picked_start]
+                generated_chain = picked_start.split('-> ')[1]
+                chain_in_iterations = [generated_chain]
+            chain_in_iterations.pop()
+            generated_chain = chain_in_iterations[-1] if len(chain_in_iterations) > 0 else \
+                picked_start.split('-> ')[1] if len(possible_starts) > 0 else None
+            if generated_chain is None:
+                print('No more possible transitions to take to generate another chain!')
+                break
+
+        non_terminals_in_the_chain = get_non_terminals_in_chain(generated_chain, _variables)
+
         if len(non_terminals_in_the_chain) > 0:
-            transitions_to_pick_from = [transition for transition in _productions
-                                        if non_terminals_in_the_chain[0] in
-                                        transition.split('-> ')[0]]
+            transitions_to_pick_from = [
+                transition for transition in _productions
+                if non_terminals_in_the_chain[0] in transition.split('-> ')[0]
+            ]
+            if remove_transition:
+                for transition in removed_transitions_this_time:
+                    if transition in transitions_to_pick_from:
+                        transitions_to_pick_from.remove(transition)
+                if len(transitions_to_pick_from) == 0:
+                    chain_in_iterations.pop()
+                    if len(chain_in_iterations) > 0:
+                        generated_chain = chain_in_iterations[-1]
+                        non_terminals_in_the_chain = get_non_terminals_in_chain(generated_chain, _variables)
+                        transitions_to_pick_from = [
+                            transition for transition in _productions
+                            if non_terminals_in_the_chain[0] in transition.split('-> ')[0]
+                        ]
+                    else:
+                        print('no more chains!')
+                        break
+                process_to_generate_the_chain.pop()
+                remove_transition = False
+                removed_transitions_this_time = []
             picked_transition = random.choice(transitions_to_pick_from)
             process_to_generate_the_chain.append(picked_transition)
-            new_str_to_the_chain = picked_transition.split('-> ')[1]
-            for i in range(len(generated_chain)):
-                if i != len(generated_chain) - 1:
-                    if picked_transition.split('-> ')[1].endswith('epsilon'):
-                        new_str_to_the_chain = picked_transition.split('-> ')[1][:-7]
-                if picked_transition.split('-> ')[0] == generated_chain[i]:
-                    new_chain = generated_chain[:i] + new_str_to_the_chain \
-                                + generated_chain[i + 1:]
-                    generated_chain = new_chain
-                    break
+            generated_chain = add_string_to_chain(generated_chain, picked_transition)
+            chain_in_iterations.append(generated_chain)
+
         else:
-            if process_to_generate_the_chain not in processes_used:
+
+            if process_to_generate_the_chain not in processes_used and generated_chain not in generated_chains:
                 print('Generated Chain Final Result: ' + generated_chain)
                 print('Process to generate the chain: ')
                 print(process_to_generate_the_chain)
+                print('Derivation on left side: ')
+                print(chain_in_iterations)
                 processes_used.append(process_to_generate_the_chain)
+                generated_chains.append(generated_chain)
                 opt = int(input('wanna generate another chain?\n1 - Yes\n2 - No'))
+
                 while opt < 1 or opt > 2:
                     opt = int(input('Choose a valid number!\n1 - Yes\n2 - No'))
+
                 if opt == 2:
                     stop = True
+
                 elif opt == 1:
                     started = False
+                    remove_transition = False
+                    removed_transitions_this_time = []
+
             else:
-                started = False
+                remove_transition = True
+                removed_transitions_this_time.append(process_to_generate_the_chain[-1])
+
+        iteration += 1
 
 
 def detailed_mode(_terminals: str, _variables: str, _initial: str, _productions: List[str]):
     process_to_generate_the_chain = []
+    chain_in_iterations = []
     possible_starts = [start for start in _productions if start[0] == _initial]
 
     options = ''
@@ -66,7 +147,13 @@ def detailed_mode(_terminals: str, _variables: str, _initial: str, _productions:
     picked_start = possible_starts[picked_start]
     process_to_generate_the_chain.append(picked_start)
     generated_chain = picked_start.split('-> ')[1]
+    chain_in_iterations.append(generated_chain)
     non_terminals_in_the_chain = [non_terminal for non_terminal in generated_chain if non_terminal in _variables]
+    if len(non_terminals_in_the_chain) == 0:
+        print('Process chosen to generate the chain: ')
+        print(process_to_generate_the_chain)
+        print('Generated Chain Final Result: ' + generated_chain[:-7] + '\n')
+        return
     transitions_to_pick_from = [transition for transition in _productions
                                 if non_terminals_in_the_chain[0] in
                                 transition.split('-> ')[0]]
@@ -84,23 +171,19 @@ def detailed_mode(_terminals: str, _variables: str, _initial: str, _productions:
             break
         picked_transition = transitions_to_pick_from[picked_transition]
         process_to_generate_the_chain.append(picked_transition)
-        new_str_to_the_chain = picked_transition.split('-> ')[1]
-        for i in range(len(generated_chain)):
-            if i != len(generated_chain) - 1:
-                if picked_transition.split('-> ')[1].endswith('epsilon'):
-                    new_str_to_the_chain = picked_transition.split('-> ')[1][:-7]
-            if picked_transition.split('-> ')[0] == generated_chain[i]:
-                new_chain = generated_chain[:i] + new_str_to_the_chain \
-                            + generated_chain[i + 1:]
-                generated_chain = new_chain
-                break
+        generated_chain = add_string_to_chain(generated_chain, picked_transition)
+        chain_in_iterations.append(generated_chain)
 
         non_terminals_in_the_chain = [non_terminal for non_terminal in generated_chain if non_terminal in _variables]
+
         if len(non_terminals_in_the_chain) == 0:
             print('Process chosen to generate the chain: ')
             print(process_to_generate_the_chain)
+            print('Derivation on left side: ')
+            print(chain_in_iterations)
             print('Generated Chain Final Result: ' + generated_chain + '\n')
             break
+
         transitions_to_pick_from = [transition for transition in _productions
                                     if non_terminals_in_the_chain[0] in
                                     transition.split('-> ')[0]]
