@@ -1,0 +1,12 @@
+terminais=a,b,c,d
+variaveis=S,A,B
+inicial=S
+producoes
+S-> aAB
+S-> bABA
+S-> epsilon
+B-> dAB
+B-> bBBAA
+B-> epsilon
+A-> a
+A-> epsilon
