@@ -2,20 +2,51 @@ import random
 from typing import List
 
 
-def get_chain(_terminals: str, _variables: str, _initial: str, _productions: List[str], current_chain: str = '',
-              started: bool = False):
-    non_terminals_in_the_chain = [non_terminal for non_terminal in current_chain if non_terminal in _variables]
-    if len(non_terminals_in_the_chain) == 0:
-        return current_chain
-    if started and current_chain == '':
-        return current_chain
-    started = True
-    if not started:
-        possible_starts = [start for start in _productions if start[0] == _initial]
-
-
 def fast_mode(_terminals: str, _variables: str, _initial: str, _productions: List[str]):
-    pass
+    started = False
+    process_to_generate_the_chain = []
+    generated_chain = []
+    stop = False
+    processes_used = []
+    while not stop:
+        if not started:
+            possible_starts = [start for start in _productions if start[0] == _initial]
+            picked_start = random.choice(possible_starts)
+            process_to_generate_the_chain = [picked_start]
+            generated_chain = picked_start.split('-> ')[1]
+            started = True
+        non_terminals_in_the_chain = [non_terminal for non_terminal in generated_chain if non_terminal in _variables]
+        if len(non_terminals_in_the_chain) > 0:
+            transitions_to_pick_from = [transition for transition in _productions
+                                        if non_terminals_in_the_chain[0] in
+                                        transition.split('-> ')[0]]
+            picked_transition = random.choice(transitions_to_pick_from)
+            process_to_generate_the_chain.append(picked_transition)
+            new_str_to_the_chain = picked_transition.split('-> ')[1]
+            for i in range(len(generated_chain)):
+                if i != len(generated_chain) - 1:
+                    if picked_transition.split('-> ')[1].endswith('epsilon'):
+                        new_str_to_the_chain = picked_transition.split('-> ')[1][:-7]
+                if picked_transition.split('-> ')[0] == generated_chain[i]:
+                    new_chain = generated_chain[:i] + new_str_to_the_chain \
+                                + generated_chain[i + 1:]
+                    generated_chain = new_chain
+                    break
+        else:
+            if process_to_generate_the_chain not in processes_used:
+                print('Generated Chain Final Result: ' + generated_chain)
+                print('Process to generate the chain: ')
+                print(process_to_generate_the_chain)
+                processes_used.append(process_to_generate_the_chain)
+                opt = int(input('wanna generate another chain?\n1 - Yes\n2 - No'))
+                while opt < 1 or opt > 2:
+                    opt = int(input('Choose a valid number!\n1 - Yes\n2 - No'))
+                if opt == 2:
+                    stop = True
+                elif opt == 1:
+                    started = False
+            else:
+                started = False
 
 
 def detailed_mode(_terminals: str, _variables: str, _initial: str, _productions: List[str]):
@@ -38,7 +69,7 @@ def detailed_mode(_terminals: str, _variables: str, _initial: str, _productions:
     non_terminals_in_the_chain = [non_terminal for non_terminal in generated_chain if non_terminal in _variables]
     transitions_to_pick_from = [transition for transition in _productions
                                 if non_terminals_in_the_chain[0] in
-                                transition.split('-> ')[0] and _initial not in transition]
+                                transition.split('-> ')[0]]
     while True:
         print('Generated Chain Until Now: ' + generated_chain + '\n')
         options = ''
@@ -72,7 +103,7 @@ def detailed_mode(_terminals: str, _variables: str, _initial: str, _productions:
             break
         transitions_to_pick_from = [transition for transition in _productions
                                     if non_terminals_in_the_chain[0] in
-                                    transition.split('-> ')[0] and _initial not in transition]
+                                    transition.split('-> ')[0]]
 
 
 def free_of_context_grammar(_terminals: str, _variables: str, _initial: str, _productions: List[str]):
