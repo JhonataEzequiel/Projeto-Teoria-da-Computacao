@@ -1,0 +1,8 @@
+terminais=1,0
+variaveis=S,A
+inicial=S
+producoes
+S-> A1A1A1A
+A-> 0A
+A-> 1A
+A-> epsilon
