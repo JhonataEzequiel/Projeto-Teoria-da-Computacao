@@ -52,7 +52,6 @@ def fast_mode(_terminals: str, _variables: str, _initial: str, _productions: Lis
     chain_in_iterations = []
 
     iteration = 0
-    picked_start = ''
     possible_starts = [start for start in _productions if start[0] == _initial]
     while not stop:
 
@@ -160,12 +159,14 @@ def detailed_mode(_terminals: str, _variables: str, _initial: str, _productions:
     process_to_generate_the_chain.append(picked_start)
     generated_chain = picked_start.split('-> ')[1]
     chain_in_iterations.append(generated_chain)
-    non_terminals_in_the_chain = [non_terminal for non_terminal in generated_chain if non_terminal in _variables]
+    non_terminals_in_the_chain = get_non_terminals_in_chain(generated_chain, _variables)
 
     # if the chosen start has no more non-terminals symbols, it stops
     if len(non_terminals_in_the_chain) == 0:
         print('Process chosen to generate the chain: ')
         print(process_to_generate_the_chain)
+        print('Derivation on left side: ')
+        print(chain_in_iterations)
         print('Generated Chain Final Result: ' + generated_chain[:-7] + '\n')
         return
     transitions_to_pick_from = [transition for transition in _productions
@@ -179,8 +180,7 @@ def detailed_mode(_terminals: str, _variables: str, _initial: str, _productions:
         options += f'{len(transitions_to_pick_from)} - exit\n'
 
         # lets the user decide what transition will be used next
-        picked_transition = input(options)
-        picked_transition = int(picked_transition)
+        picked_transition = int(input(options))
         while picked_transition < 0 or picked_transition > len(transitions_to_pick_from):
             picked_transition = input('choose a valid number!\n' + options)
         if picked_transition == len(transitions_to_pick_from):
@@ -191,7 +191,7 @@ def detailed_mode(_terminals: str, _variables: str, _initial: str, _productions:
         generated_chain = add_string_to_chain(generated_chain, picked_transition)
         chain_in_iterations.append(generated_chain)
 
-        non_terminals_in_the_chain = [non_terminal for non_terminal in generated_chain if non_terminal in _variables]
+        non_terminals_in_the_chain = get_non_terminals_in_chain(generated_chain, _variables)
 
         if len(non_terminals_in_the_chain) == 0:
             print('Process chosen to generate the chain: ')
